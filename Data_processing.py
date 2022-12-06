@@ -1,75 +1,45 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver import ActionChains
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
 import time
 import requests
-# from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup
+import pandas as pd
 
-player_stats_url = "https://www.basketball-reference.com/leagues/NBA_{}_per_game.html"
+players = pd.read_csv("players.csv")
 
-# # url = player_stats_url.format(1991)
-# # data = requests.get(url)
-# # with open("player/1991.html", "w+") as f:
-# #     f.write(data.text)
-    
-# # driver = webdriver.Chrome()
-# # year = 1991
-# # url = player_stats_url.format(year)
+del players["Unnamed: 0"]
+del players["Rk"]
+# print(players.head())
+players["Player"] = players["Player"].str.replace("*", "", regex=False)
 
-# # driver.get(url)
-# # driver.execute_script("windows.scrollTo(1,10000)")
-# # time.sleep(2)
-
-# # html = driver.page_source
-
-# # with open("player/{}.html".format(year), "w+") as f:
-# #     f.write(html)
-    
-    
-# years = list(range(1991,1992))    
-# # for year in years:
-# url = player_stats_url.format(2002)
-# driver = webdriver.Chrome()
-# driver.get(url)
-# driver.execute_script("window.scrollTo(1,10000)")
-    # time.sleep(2)
-    # html = driver.page_source
-    # with open("player/{}.html".format(year), "w+", encoding="utf_8_sig") as f:
-    #     f.write(html)
+def single_row(df):
+    if df.shape[0]==1:
+        return df
+    else:
+        row = df[df["Tm"] == "TOT"]
+        row["Tm"] = df.iloc[-1,:]["Tm"]
+        return row
         
-# dfs = []
-# for year in years:
-#     with open("player/{}.html".format(year), encoding="utf_8_sig") as f:
-#         page = f.read()
-        
-#     soup = BeautifulSoup(page, "html.parser")
-#     soup.find('tr', class_="over_header").decompose()
-#     player_table = soup.find_all(id="per_game_stats")[0]
-#     player_df = pd.read_html(str(player_table))[0]
-#     player_df["Year"] = year
-#     dfs.append(player_df)
-        
-        
+players = players.groupby(["Player", "Year"]).apply(single_row)
+
+players.index = players.index.droplevel()
+players.index = players.index.droplevel()
+players[players["Player"] == "Greg Anderson"]
 
 
-options = Options()
-user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.517 Safari/537.36'
-options.add_argument('user-agent={0}'.format(user_agent))
+advanced = pd.read_csv("advanced_data.csv")
 
-driver = webdriver.Chrome(options=options)
-wait = WebDriverWait(driver, 20)
-action = ActionChains(driver)
+del advanced["Unnamed: 0"]
+del advanced["Unnamed: 19"]
+del advanced["Unnamed: 24"]
+del advanced["Rk"]
+# print(players.head())
+advanced["Player"] = advanced["Player"].str.replace("*", "", regex=False)
+advanced = advanced.groupby(["Player", "Year"]).apply(single_row)
+advanced.index = advanced.index.droplevel()
+advanced.index = advanced.index.droplevel()
+advanced[advanced["Player"] == "Greg Anderson"]
 
+combined = players.merge(advanced, how="outer", on=["Player", "Year"])
 
-url = player_stats_url.format(2002)
-# player = requests.get(url)
-# with open("player/{}.html".format(year), "w+", encoding="utf_8_sig") as f:
-#     f.write(html)
-driver.get(url)
-Login_Btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@class='pxc-fn-login']/a")))
-
-action.move_to_element(Login_Btn).click().perform()
+combined.to_csv("Combined_stats.csv")
