@@ -6,7 +6,7 @@ Main Tools: Python
 
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install selenium.
 
 ```bash
 pip install selenium
